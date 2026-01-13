@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lịch học TOEIC 990 (19/01 – 07/03/2026)</title>
+  <style>
+    :root {
+      --primary: #0b6cff;
+      --secondary: #004080;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #333;
+      --muted: #666;
+      --border: #e3e7ef;
+      --success: #2e7d32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    header {
+      max-width: 1000px;
+      margin: 0 auto 24px auto;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      color: var(--primary);
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button, .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #eef3ff;
+      color: var(--secondary);
+      border: 1px solid #cfe0ff;
+    }
+    button.danger {
+      background: #ffe9e7;
+      color: #b00020;
+      border: 1px solid #ffc2bd;
+    }
+    .legend {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .legend span::before {
+      content: "• ";
+      color: var(--primary);
+      font-weight: 700;
+    }
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 900px) {
+      main { grid-template-columns: 1fr 1fr; }
+    }
+    .week {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .week-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .week-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+    .week-goal {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .day {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fbfdff;
+    }
+    .day-title {
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .tasks {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .task input[type="checkbox"] {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+    .progress {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .week-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .footer-note {
+      max-width: 1000px;
+      margin: 12px auto 0 auto;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .done {
+      color: var(--success);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lịch học TOEIC 990 (19/01 – 07/03/2026)</h1>
+    <div class="sub">
+      Lịch bám theo khung giờ người đi làm (Thứ 2–6: 9h–18h, Thứ 7: 9h–12h).
+      Mỗi hoạt động có checkbox để đánh dấu hoàn thành, tự lưu trong trình duyệt.
+    </div>
+    <div class="controls">
+      <button id="exportBtn" class="secondary">Xuất tiến độ (.json)</button>
+      <label class="btn secondary" style="display:inline-block;">
+        <input id="importInput" type="file" accept="application/json" style="display:none;">
+        <span>Nhập tiến độ (.json)</span>
+      </label>
+      <button id="resetAllBtn" class="danger">Reset toàn bộ</button>
+    </div>
+    <div class="legend">
+      <span>Hoạt động trong giờ làm: chia phiên 20–30'</span>
+      <span>Buổi tối/cuối tuần: luyện đề/tổng ôn</span>
+      <span>Lưu tự động: localStorage</span>
+    </div>
+  </header>
+
+  <main id="weeks"></main>
+
+  <div class="footer-note">
+    Gợi ý: Chủ nhật nghỉ/ôn nhẹ bằng flashcards; dùng Error Log để tổng hợp lỗi mỗi tuần.
+  </div>
+
+  <script>
+    // Cấu hình ngày và nội dung
+    const startDate = new Date('2026-01-19'); // 19/01/2026
+    const endDate   = new Date('2026-03-07'); // 07/03/2026
+
+    const weeklyGoals = [
+      'Ôn nền tảng ngữ pháp và từ vựng TOEIC',
+      'Tiếp tục ngữ pháp, mở rộng từ vựng',
+      'Luyện nghe Part 1–4, đọc hiểu Part 7',
+      'Tăng tốc nghe + đọc, học collocations',
+      'Làm đề TOEIC full, phân tích lỗi',
+      'Luyện đề nâng cao, chiến lược thi',
+      'Tổng ôn, mô phỏng thi thật'
+    ];
+
+    const weeklyActivities = [
+      ['Ngữ pháp Part 5–6', 'Từ vựng chủ đề', 'Listening Part 3', 'Reading Part 7'],
+      ['Ngữ pháp Part 5–6', 'Từ vựng chủ đề', 'Listening Part 4', 'Reading Part 7'],
+      ['Listening Part 1–4', 'Reading Part 7', 'Từ vựng collocations', 'Mini-test Reading'],
+      ['Listening Part 3–4', 'Reading Part 7', 'Từ vựng nâng cao', 'Mini-test'],
+      ['Làm đề full TOEIC', 'Phân tích lỗi', 'Ôn từ vựng cá nhân'],
+      ['Luyện đề ETS', 'Listening nâng cao', 'Ngữ pháp trọng điểm', 'Từ vựng cá nhân'],
+      ['Đề mô phỏng thi', 'Tổng ôn từ vựng', 'Nghỉ ngơi giữ tinh thần']
+    ];
+
+    // Tiện ích ngày tháng
+    const fmt = (d) => {
+      const dd = d.getDate().toString().padStart(2,'0');
+      const mm = (d.getMonth()+1).toString().padStart(2,'0');
+      const days = ['CN','T2','T3','T4','T5','T6','T7'];
+      return `${dd}/${mm} (${days[d.getDay()]})`;
+    };
+    const addDays = (d, n) => {
+      const x = new Date(d);
+      x.setDate(x.getDate() + n);
+      return x;
+    };
+
+    // Lưu/đọc tiến độ
+    const LS_KEY = 'toeic-990-2026-progress';
+    const loadProgress = () => {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+      catch(e){ return {}; }
+    };
+    const saveProgress = (data) => localStorage.setItem(LS_KEY, JSON.stringify(data));
+    let progress = loadProgress();
+
+    // Tạo UI tuần/ngày
+    const weeksEl = document.getElementById('weeks');
+    let cur = new Date(startDate);
+    let weekIdx = 0;
+
+    while (cur <= endDate && weekIdx < 7) {
+      const weekStart = new Date(cur);
+      const weekEnd = addDays(cur, 6);
+      const weekBox = document.createElement('section');
+      weekBox.className = 'week';
+
+      const header = document.createElement('div');
+      header.className = 'week-header';
+      const title = document.createElement('div');
+      title.className = 'week-title';
+      title.textContent = `Tuần ${weekIdx + 1} (${fmt(weekStart).slice(0,5)} – ${fmt(weekEnd).slice(0,5)})`;
+
+      const goal = document.createElement('div');
+      goal.className = 'week-goal';
+      goal.textContent = `Mục tiêu: ${weeklyGoals[weekIdx]}`;
+
+      header.appendChild(title);
+      header.appendChild(goal);
+
+      const actions = document.createElement('div');
+      actions.className = 'week-actions';
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'secondary';
+      resetBtn.textContent = 'Reset tuần này';
+      actions.appendChild(resetBtn);
+
+      header.appendChild(actions);
+      weekBox.appendChild(header);
+
+      // Ngày trong tuần
+      let doneCount = 0;
+      let totalCount = 0;
+      for (let i = 0; i < 7 && cur <= endDate; i++) {
+        const dayBox = document.createElement('div');
+        dayBox.className = 'day';
+        const dayTitle = document.createElement('div');
+        dayTitle.className = 'day-title';
+        dayTitle.textContent = fmt(cur);
+        dayBox.appendChild(dayTitle);
+
+        const tasks = document.createElement('div');
+        tasks.className = 'tasks';
+
+        const activities = weeklyActivities[weekIdx];
+        activities.forEach((act, ai) => {
+          const task = document.createElement('label');
+          task.className = 'task';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          const key = `${cur.toISOString().slice(0,10)}::${ai}`;
+          if (progress[key]) cb.checked = true;
+          cb.addEventListener('change', () => {
+            progress[key] = cb.checked;
+            saveProgress(progress);
+            // cập nhật tiến độ tuần
+            updateWeekProgress();
+          });
+          const text = document.createTextNode(` ${act}`);
+          task.appendChild(cb);
+          task.appendChild(text);
+          tasks.appendChild(task);
+        });
+
+        dayBox.appendChild(tasks);
+        weekBox.appendChild(dayBox);
+
+        // đếm tiến độ
+        totalCount += activities.length;
+        activities.forEach((_, ai) => {
+          const key = `${cur.toISOString().slice(0,10)}::${ai}`;
+          if (progress[key]) doneCount++;
+        });
+
+        cur = addDays(cur, 1);
+      }
+
+      // hiển thị tiến độ tuần
+      const prog = document.createElement('div');
+      prog.className = 'progress';
+      const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+      prog.innerHTML = `Tiến độ tuần: <span class="${pct===100?'done':''}">${doneCount}/${totalCount} (${pct}%)</span>`;
+      weekBox.appendChild(prog);
+
+      // reset tuần
+      resetBtn.addEventListener('click', () => {
+        const days = [];
+        for (let i = 0; i < 7; i++) days.push(addDays(weekStart, i).toISOString().slice(0,10));
+        const actsLen = weeklyActivities[weekIdx].length;
+        days.forEach(d => {
+          for (let ai = 0; ai < actsLen; ai++) {
+            delete progress[`${d}::${ai}`];
+          }
+        });
+        saveProgress(progress);
+        // reload UI
+        location.reload();
+      });
+
+      weeksEl.appendChild(weekBox);
+      weekIdx++;
+    }
+
+    // cập nhật tiến độ toàn cục (khi import)
+    function updateWeekProgress(){
+      // đơn giản: reload để tính lại
+      // (giữ nhẹ nhàng để tránh phức tạp)
+    }
+
+    // Export/Import/Reset toàn bộ
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(progress, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'toeic-progress-2026.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('importInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      try {
+        const data = JSON.parse(text);
+        if (typeof data === 'object' && data) {
+          progress = data;
+          saveProgress(progress);
+          location.reload();
+        } else {
+          alert('File không hợp lệ.');
+        }
+      } catch {
+        alert('Không thể đọc file JSON.');
+      }
+    });
+
+    document.getElementById('resetAllBtn').addEventListener('click', () => {
+      if (confirm('Reset toàn bộ tiến độ?')) {
+        progress = {};
+        saveProgress(progress);
+        location.reload();
+      }
+    });
+  </script>
+</body>
+</html>
