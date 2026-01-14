@@ -37,16 +37,19 @@
       color: var(--primary);
       font-size: 22px;
       font-weight: 700;
+      text-align: center;
     }
     .sub {
       color: var(--muted);
       font-size: 14px;
-      margin-bottom: 12px;
+      margin: 8px 0 12px 0;
+      text-align: center;
     }
     .controls {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
+      justify-content: center;
     }
     button, .btn {
       background: var(--primary);
@@ -73,6 +76,8 @@
       margin-top: 10px;
       font-size: 13px;
       color: var(--muted);
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .legend span::before {
       content: "• ";
@@ -140,6 +145,13 @@
       transform: scale(1.2);
       cursor: pointer;
     }
+    .task a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .task a:hover {
+      text-decoration: underline;
+    }
     .progress {
       margin-top: 8px;
       font-size: 12px;
@@ -167,8 +179,7 @@
   <header>
     <h1>Lịch học TOEIC 990 (19/01 – 07/03/2026)</h1>
     <div class="sub">
-      Lịch bám theo khung giờ người đi làm (Thứ 2–6: 9h–18h, Thứ 7: 9h–12h).
-      Mỗi hoạt động có checkbox để đánh dấu hoàn thành, tự lưu trong trình duyệt.
+      Lịch theo tuần/ngày, mỗi hoạt động có checkbox lưu tiến độ (localStorage) và link trực tiếp đến nguồn học miễn phí.
     </div>
     <div class="controls">
       <button id="exportBtn" class="secondary">Xuất tiến độ (.json)</button>
@@ -179,7 +190,7 @@
       <button id="resetAllBtn" class="danger">Reset toàn bộ</button>
     </div>
     <div class="legend">
-      <span>Hoạt động trong giờ làm: chia phiên 20–30'</span>
+      <span>Trong giờ làm: chia phiên 20–30'</span>
       <span>Buổi tối/cuối tuần: luyện đề/tổng ôn</span>
       <span>Lưu tự động: localStorage</span>
     </div>
@@ -192,28 +203,71 @@
   </div>
 
   <script>
-    // Cấu hình ngày và nội dung
+    // Cấu hình ngày
     const startDate = new Date('2026-01-19'); // 19/01/2026
     const endDate   = new Date('2026-03-07'); // 07/03/2026
 
+    // Nguồn học miễn phí
+    const resources = {
+      Grammar:   'https://estudyme.com/en/toeic-testpro/',
+      Vocabulary:'https://www.fastvoca.com/toeic-voca-en/',
+      Listening: 'https://www.bestmytest.com/toeic/listening',
+      Reading:   'https://www.bestmytest.com/toeic/reading',
+      FullTest:  'https://prepedu.com/en/toeic/test-practice',
+      MiniTest:  'https://www.varsitytutors.com/practice/subjects/toeic/practice',
+      Flashcards:'https://quizlet.com/subject/toeic/'
+    };
+
+    // Mục tiêu tuần
     const weeklyGoals = [
       'Ôn nền tảng ngữ pháp và từ vựng TOEIC',
       'Tiếp tục ngữ pháp, mở rộng từ vựng',
-      'Luyện nghe Part 1–4, đọc hiểu Part 7',
+      'Listening + Reading tăng tốc',
       'Tăng tốc nghe + đọc, học collocations',
-      'Làm đề TOEIC full, phân tích lỗi',
-      'Luyện đề nâng cao, chiến lược thi',
+      'Full test practice (ETS)',
+      'Chiến lược thi + luyện đề nâng cao',
       'Tổng ôn, mô phỏng thi thật'
     ];
 
+    // Hoạt động theo tuần (mỗi ngày dùng cùng khung hoạt động, bạn tick theo tiến độ)
     const weeklyActivities = [
-      ['Ngữ pháp Part 5–6', 'Từ vựng chủ đề', 'Listening Part 3', 'Reading Part 7'],
-      ['Ngữ pháp Part 5–6', 'Từ vựng chủ đề', 'Listening Part 4', 'Reading Part 7'],
-      ['Listening Part 1–4', 'Reading Part 7', 'Từ vựng collocations', 'Mini-test Reading'],
-      ['Listening Part 3–4', 'Reading Part 7', 'Từ vựng nâng cao', 'Mini-test'],
-      ['Làm đề full TOEIC', 'Phân tích lỗi', 'Ôn từ vựng cá nhân'],
-      ['Luyện đề ETS', 'Listening nâng cao', 'Ngữ pháp trọng điểm', 'Từ vựng cá nhân'],
-      ['Đề mô phỏng thi', 'Tổng ôn từ vựng', 'Nghỉ ngơi giữ tinh thần']
+      [
+        { label: 'Grammar (Part 5–6)', type: 'Grammar', time: '9h30–10h00' },
+        { label: 'Vocabulary theo chủ đề (20 từ)', type: 'Vocabulary', time: '13h30–14h00' },
+        { label: 'Listening (Part 3)', type: 'Listening', time: '16h30–17h00' },
+        { label: 'Reading (Part 7)', type: 'Reading', time: '20h00–20h30' }
+      ],
+      [
+        { label: 'Grammar (Part 5–6)', type: 'Grammar', time: '9h30–10h00' },
+        { label: 'Vocabulary theo chủ đề (20 từ)', type: 'Vocabulary', time: '13h30–14h00' },
+        { label: 'Listening (Part 4)', type: 'Listening', time: '16h30–17h00' },
+        { label: 'Reading (Part 7)', type: 'Reading', time: '20h00–20h30' }
+      ],
+      [
+        { label: 'Listening (Part 4)', type: 'Listening', time: '9h30–10h00' },
+        { label: 'Vocabulary collocations/idioms', type: 'Vocabulary', time: '13h30–14h00' },
+        { label: 'Reading (Part 7)', type: 'Reading', time: '16h30–17h00' },
+        { label: 'Mini-test Reading (10 câu)', type: 'MiniTest', time: '20h00–20h30' }
+      ],
+      [
+        { label: 'Listening (Part 3–4)', type: 'Listening', time: '9h30–10h00' },
+        { label: 'Vocabulary nâng cao', type: 'Vocabulary', time: '13h30–14h00' },
+        { label: 'Reading (Part 7)', type: 'Reading', time: '16h30–17h00' },
+        { label: 'Mini-test (10–20 câu)', type: 'MiniTest', time: '20h00–20h30' }
+      ],
+      [
+        { label: 'Đề full TOEIC (ETS)', type: 'FullTest', time: '20h00–22h00' }
+      ],
+      [
+        { label: 'Grammar trọng điểm', type: 'Grammar', time: '9h30–10h00' },
+        { label: 'Vocabulary cá nhân (Error Log)', type: 'Vocabulary', time: '13h30–14h00' },
+        { label: 'Listening (Part 3–4)', type: 'Listening', time: '16h30–17h00' },
+        { label: 'Mini-test (50 câu)', type: 'MiniTest', time: '20h00–21h00' }
+      ],
+      [
+        { label: 'Đề full mô phỏng thi thật', type: 'FullTest', time: '20h00–22h00' },
+        { label: 'Flashcards ôn nhẹ', type: 'Flashcards', time: 'Tuỳ chọn' }
+      ]
     ];
 
     // Tiện ích ngày tháng
@@ -230,7 +284,7 @@
     };
 
     // Lưu/đọc tiến độ
-    const LS_KEY = 'toeic-990-2026-progress';
+    const LS_KEY = 'toeic-990-online-progress';
     const loadProgress = () => {
       try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
       catch(e){ return {}; }
@@ -243,7 +297,7 @@
     let cur = new Date(startDate);
     let weekIdx = 0;
 
-    while (cur <= endDate && weekIdx < 7) {
+    while (cur <= endDate && weekIdx < weeklyActivities.length) {
       const weekStart = new Date(cur);
       const weekEnd = addDays(cur, 6);
       const weekBox = document.createElement('section');
@@ -292,17 +346,25 @@
           task.className = 'task';
           const cb = document.createElement('input');
           cb.type = 'checkbox';
-          const key = `${cur.toISOString().slice(0,10)}::${ai}`;
+          const key = `${cur.toISOString().slice(0,10)}::${weekIdx}::${ai}`;
           if (progress[key]) cb.checked = true;
           cb.addEventListener('change', () => {
             progress[key] = cb.checked;
             saveProgress(progress);
-            // cập nhật tiến độ tuần
             updateWeekProgress();
           });
-          const text = document.createTextNode(` ${act}`);
+
+          const link = document.createElement('a');
+          const resKey = act.type === 'FullTest' ? 'FullTest'
+                        : act.type === 'MiniTest' ? 'MiniTest'
+                        : act.type === 'Flashcards' ? 'Flashcards'
+                        : act.type;
+          link.href = resources[resKey] || '#';
+          link.target = '_blank';
+          link.textContent = `${act.time}: ${act.label}`;
+
           task.appendChild(cb);
-          task.appendChild(text);
+          task.appendChild(link);
           tasks.appendChild(task);
         });
 
@@ -312,7 +374,7 @@
         // đếm tiến độ
         totalCount += activities.length;
         activities.forEach((_, ai) => {
-          const key = `${cur.toISOString().slice(0,10)}::${ai}`;
+          const key = `${cur.toISOString().slice(0,10)}::${weekIdx}::${ai}`;
           if (progress[key]) doneCount++;
         });
 
@@ -333,11 +395,10 @@
         const actsLen = weeklyActivities[weekIdx].length;
         days.forEach(d => {
           for (let ai = 0; ai < actsLen; ai++) {
-            delete progress[`${d}::${ai}`];
+            delete progress[`${d}::${weekIdx}::${ai}`];
           }
         });
         saveProgress(progress);
-        // reload UI
         location.reload();
       });
 
@@ -345,7 +406,6 @@
       weekIdx++;
     }
 
-    // cập nhật tiến độ toàn cục (khi import)
     function updateWeekProgress(){
       // đơn giản: reload để tính lại
       // (giữ nhẹ nhàng để tránh phức tạp)
@@ -390,3 +450,4 @@
   </script>
 </body>
 </html>
+
